@@ -1,0 +1,277 @@
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&display=swap">
+  <style>
+    .background {
+      background-color: #121818;
+      height: 100vh;
+      padding-top: 1px;
+      font-family: 'Itim', cursive;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .title {
+      color: white;
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    .display {
+      color: white;
+      font-size: 25px;
+      margin: 1em 0;
+    }
+
+    .hide {
+      display: none;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+    }
+
+    .tile {
+      background-color: #1e272e;
+      border: 1px solid #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 50px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .playerX {
+      color: #09c372;
+    }
+
+    .playerO {
+      color: #498afb;
+    }
+
+    .controls {
+      margin-top: 1em;
+    }
+
+    #reset {
+      background-color: #ff3860;
+      color: white;
+      padding: 8px 20px;
+      border-radius: 8px;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .footer {
+      margin-top: 30px;
+      color: white;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <main class="background">
+    <section class="title">
+      <h1>Tic Tac Toe</h1>
+    </section>
+    <section class="display">
+      Player <span class="display-player playerX">X</span>'s turn
+    </section>
+    <section class="container">
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+      <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+    </section>
+    <section class="display announcer hide"></section>
+    <section class="controls">
+      <button id="reset">Reset</button>
+    </section>
+    <div class="footer">Created by Noor</div>
+  </main>
+  <script>
+  window.addEventListener('DOMContentLoaded', () => {
+    const tiles = Array.from(document.querySelectorAll('.tile'));
+    const playerDisplay = document.querySelector('.display-player');
+    const resetButton = document.querySelector('#reset');
+    const announcer = document.querySelector('.announcer');
+
+    let board = ['', '', '', '', '', '', '', '', ''];
+    let currentPlayer = 'X';
+    let isGameActive = true;
+
+    const PLAYERX_WON = 'PLAYERX_WON';
+    const PLAYERO_WON = 'PLAYERO_WON';
+    const TIE = 'TIE';
+
+    const winningConditions = [
+      [0, 1, 2], [3, 4, 5], [6, 7, 8],
+      [0, 3, 6], [1, 4, 7], [2, 5, 8],
+      [0, 4, 8], [2, 4, 6]
+    ];
+
+    const announce = (type) => {
+      switch (type) {
+        case PLAYERO_WON:
+          announcer.innerHTML = 'Player <span class="playerO">O  </span> WON';
+          break;
+        case PLAYERX_WON:
+          announcer.innerHTML = 'Player <span class="playerX">X </span> WON';
+          break;
+        case TIE:
+          announcer.innerText = 'Tie';
+          break;
+      }
+      announcer.classList.remove('hide');
+    };
+
+    const handleResultValidation = () => {
+      let roundWon = false;
+      for (let i = 0; i < winningConditions.length; i++) {
+        const [a, b, c] = winningConditions[i];
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+          roundWon = true;
+          break;
+        }
+      }
+
+      if (roundWon) {
+        announce(currentPlayer === 'X' ? PLAYERX_WON : PLAYERO_WON);
+        isGameActive = false;
+        return true;
+      }
+
+      if (!board.includes('')) {
+        announce(TIE);
+        isGameActive = false;
+        return true;
+      }
+
+      return false;
+    };
+
+    const changePlayer = () => {
+      playerDisplay.classList.remove(`player${currentPlayer}`);
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      playerDisplay.innerText = currentPlayer;
+      playerDisplay.classList.add(`player${currentPlayer}`);
+    };
+
+    const userAction = (tile, index) => {
+      if (tile.innerText === '' && isGameActive && currentPlayer === 'X') {
+        tile.innerText = 'X';
+        tile.classList.add('playerX');
+        board[index] = 'X';
+        if (!handleResultValidation()) {
+          changePlayer();
+          setTimeout(aiMove, 300);
+        }
+      }
+    };
+
+    const aiMove = () => {
+      if (!isGameActive) return;
+
+      const bestMove = minimax(board, 'O').index;
+      board[bestMove] = 'O';
+      tiles[bestMove].innerText = 'O';
+      tiles[bestMove].classList.add('playerO');
+
+      if (!handleResultValidation()) changePlayer();
+    };
+
+    const minimax = (newBoard, player) => {
+      const availSpots = newBoard
+        .map((val, idx) => val === '' ? idx : null)
+        .filter(val => val !== null);
+
+      if (checkWin(newBoard, 'X')) {
+        return { score: -10 };
+      } else if (checkWin(newBoard, 'O')) {
+        return { score: 10 };
+      } else if (availSpots.length === 0) {
+        return { score: 0 };
+      }
+
+      const moves = [];
+
+      for (let i = 0; i < availSpots.length; i++) {
+        const move = {};
+        move.index = availSpots[i];
+        newBoard[availSpots[i]] = player;
+
+        if (player === 'O') {
+          const result = minimax(newBoard, 'X');
+          move.score = result.score;
+        } else {
+          const result = minimax(newBoard, 'O');
+          move.score = result.score;
+        }
+
+        newBoard[availSpots[i]] = '';
+        moves.push(move);
+      }
+
+      let bestMove;
+      if (player === 'O') {
+        let bestScore = -Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score > bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score < bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      }
+
+      return moves[bestMove];
+    };
+
+    const checkWin = (board, player) => {
+      return winningConditions.some(condition => 
+        condition.every(index => board[index] === player)
+      );
+    };
+
+    const resetBoard = () => {
+      board = ['', '', '', '', '', '', '', '', ''];
+      isGameActive = true;
+      announcer.classList.add('hide');
+
+      if (currentPlayer === 'O') changePlayer();
+
+      tiles.forEach(tile => {
+        tile.innerText = '';
+        tile.classList.remove('playerX', 'playerO');
+      });
+    };
+
+    tiles.forEach((tile, index) => {
+      tile.addEventListener('click', () => userAction(tile, index));
+    });
+
+    resetButton.addEventListener('click', resetBoard);
+  });
+</script>
+ 
+</body>
+</html>
